@@ -15,7 +15,7 @@ Bringing machine 'selinux' up with 'virtualbox' provider...
     selinux:
     selinux: Apr 27 13:07:36 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
     selinux: Apr 27 13:07:36 selinux nginx[3560]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-    selinux: Apr 27 13:07:36 selinux nginx[3560]: nginx: [emerg] bind() to [::]:4881 failed (13: Permission denied)
+    selinux: Apr 27 13:07:36 selinux nginx[3560]: nginx: [emerg] bind() to 0.0.0.0:4881 failed (13: Permission denied)
     selinux: Apr 27 13:07:36 selinux nginx[3560]: nginx: configuration file /etc/nginx/nginx.conf test failed
     selinux: Apr 27 13:07:36 selinux systemd[1]: nginx.service: Control process exited, code=exited status=1
     selinux: Apr 27 13:07:36 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
@@ -37,7 +37,7 @@ went wrong.
 
 Apr 27 13:13:30 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
 Apr 27 13:13:30 selinux nginx[3780]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-Apr 27 13:13:30 selinux nginx[3780]: nginx: [emerg] bind() to [::]:4881 failed (13: Permission denied)
+Apr 27 13:13:30 selinux nginx[3780]: nginx: [emerg] bind() to 0.0.0.0:4881 failed (13: Permission denied)
 Apr 27 13:13:30 selinux nginx[3780]: nginx: configuration file /etc/nginx/nginx.conf test failed
 Apr 27 13:13:30 selinux systemd[1]: nginx.service: Control process exited, code=exited status=1
 Apr 27 13:13:30 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
@@ -96,3 +96,4 @@ Apr 27 14:12:32 selinux systemd[1]: Started The nginx HTTP and reverse proxy ser
 ```
 1
 ```
+![Снимок экрана 2022-04-27 в 22 18 02](https://user-images.githubusercontent.com/98701086/165603069-fc5f880f-e851-4a86-9dec-1ccdd2d10811.png)
