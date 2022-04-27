@@ -2,8 +2,8 @@
 # vim: set ft=ruby :
 MACHINES = {
 	:selinux => {
-		:box_name => "oraclelinux/8",
-		:box_url => "https://oracle.github.io/vagrant-projects/boxes/oraclelinux/8.json"
+		:box_name => "generic/rocky8",
+		#:box_url => "https://oracle.github.io/vagrant-projects/boxes/oraclelinux/8.json"
 		#:box_version => "2004.01",
 		#:provision => "test.sh",
 		}		,
@@ -12,7 +12,7 @@ Vagrant.configure("2") do |config|
 	MACHINES.each do |boxname, boxconfig|
 		config.vm.define boxname do |box|
 		box.vm.box = boxconfig[:box_name]
-		box.vm.box_url = boxconfig[:box_url]
+		#box.vm.box_url = boxconfig[:box_url]
 		#box.vm.box_version = boxconfig[:box_version]
 		box.vm.host_name = "selinux"
 		box.vm.network "forwarded_port", guest: 4881, host: 4881
@@ -25,6 +25,8 @@ Vagrant.configure("2") do |config|
 			dnf install -y epel-release
 			#install nginx
 			dnf install -y nginx
+			#Semanage utils
+			dnf install -y policycoreutils-python-utils
 			#change nginx port
 			sed -ie 's/:80/:4881/g' /etc/nginx/nginx.conf
 			sed -i 's/listen 80;/listen 4881;/' /etc/nginx/nginx.conf
