@@ -25,6 +25,8 @@ Vagrant.configure("2") do |config|
 			dnf install -y epel-release
 			#install nginx
 			dnf install -y nginx
+			firewall-cmd --add-port=4881/tcp
+			firewall-cmd --runtime-to-permanent
 			#Semanage utils
 			dnf install -y policycoreutils-python-utils
 			#change nginx port
