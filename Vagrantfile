@@ -3,19 +3,16 @@
 MACHINES = {
 	:selinux => {
 		:box_name => "generic/rocky8",
-		#:box_url => "https://oracle.github.io/vagrant-projects/boxes/oraclelinux/8.json"
-		#:box_version => "2004.01",
-		#:provision => "test.sh",
+                :ip_addr => '192.168.56.151'
 		}		,
 	}
 Vagrant.configure("2") do |config|
 	MACHINES.each do |boxname, boxconfig|
 		config.vm.define boxname do |box|
 		box.vm.box = boxconfig[:box_name]
-		#box.vm.box_url = boxconfig[:box_url]
-		#box.vm.box_version = boxconfig[:box_version]
 		box.vm.host_name = "selinux"
-		box.vm.network "forwarded_port", guest: 4881, host: 4881
+		#box.vm.network "forwarded_port", guest: 4881, host: 4881
+                box.vm.network "private_network", ip: boxconfig[:ip_addr]
 		box.vm.provider :virtualbox do |vb|
 			vb.customize ["modifyvm", :id, "--memory", "1024"]
 			needsController = false
