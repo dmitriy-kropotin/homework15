@@ -168,3 +168,4 @@ Apr 28 11:31:22 selinux nginx[4750]: nginx: configuration file /etc/nginx/nginx.
 Apr 28 11:31:22 selinux systemd[1]: Started The nginx HTTP and reverse proxy server.
 ```
 
+![Screenshot from 2022-04-28 14-35-32](https://user-images.githubusercontent.com/98701086/165743741-f817b366-e5f4-45dd-827f-b38d9f7942db.png)
