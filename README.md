@@ -1,4 +1,5 @@
 # homework15
+1. Запускаю вирутальную машину
 
 ```
 [tesla@rocky8 homework15]$ vagrant up
@@ -25,6 +26,7 @@ assumes that this means the command failed. The output for this command
 should be in the log above. Please read the output to determine what
 went wrong.
 ```
+2. Проверяю статус nginx после запуска машины
 
 ```
 [vagrant@selinux ~]$ sudo -i
@@ -44,7 +46,9 @@ Apr 28 10:51:55 selinux systemd[1]: nginx.service: Failed with result 'exit-code
 Apr 28 10:51:55 selinux systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
 
 ```
+3. nginx не удалось стартовать, нет прав на bind на 4881 порту
 
+4. Проверяю состояние SELinux и корректность конфигурации nginx
 ```
 [root@selinux ~]# getenforce
 Enforcing
@@ -52,12 +56,17 @@ Enforcing
 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /etc/nginx/nginx.conf test is successful
 ```
+5. Проверяю лог audit.log на сообщения о порте 4881
 
 ```
 [root@selinux ~]# grep 4881 /var/log/audit/audit.log
 type=AVC msg=audit(1651143115.799:559): avc:  denied  { name_bind } for  pid=4421 comm="nginx" src=4881 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:unreserved_port_t:s0 tclass=tcp_socket permissive=0
 
 ```
+6. SELinux говорит, что не разрешает биндить nginx порт не из резервированных 
+
+7. Посмотрю, что предложит программа audit2why
+
 ```
 [root@selinux ~]# grep 4881 /var/log/audit/audit.log | audit2why
 type=AVC msg=audit(1651143115.799:559): avc:  denied  { name_bind } for  pid=4421 comm="nginx" src=4881 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:unreserved_port_t:s0 tclass=tcp_socket permissive=0
@@ -70,6 +79,8 @@ type=AVC msg=audit(1651143115.799:559): avc:  denied  { name_bind } for  pid=442
         Allow access by executing:
         # setsebool -P nis_enabled 1
 ```
+8. Ну и сделаю, что она предложила. И перезапущу nginx
+
 ```
 [root@selinux ~]# setsebool -P nis_enabled 1
 [root@selinux ~]# systemctl start nginx
@@ -93,8 +104,11 @@ Apr 28 11:09:51 selinux nginx[4682]: nginx: the configuration file /etc/nginx/ng
 Apr 28 11:09:51 selinux nginx[4682]: nginx: configuration file /etc/nginx/nginx.conf test is successful
 Apr 28 11:09:51 selinux systemd[1]: Started The nginx HTTP and reverse proxy server.
 ```
+9. nginx запустился, стартовая страница доступна
 
 ![Снимок экрана 2022-04-27 в 22 18 02](https://user-images.githubusercontent.com/98701086/165603069-fc5f880f-e851-4a86-9dec-1ccdd2d10811.png)
+
+10. Переключаю nis_enabled обратно в off 
 
 ```
 [root@selinux ~]# getsebool -a | grep nis_enabled
@@ -102,6 +116,7 @@ nis_enabled --> on
 [root@selinux ~]# setsebool -P nis_enabled off
 [root@selinux ~]#
 ```
+11. Перезапускаю nginx, биндить порт 4881 ему опять запрещено
 
 ```
 [root@selinux ~]# systemctl restart nginx
@@ -126,6 +141,7 @@ Apr 28 11:28:39 selinux systemd[1]: nginx.service: Control process exited, code=
 Apr 28 11:28:39 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
 Apr 28 11:28:39 selinux systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
 ```
+12. Посмотрю список портов в списке http_port_t
 
 ```
 [root@selinux ~]# semanage port -l | grep http
@@ -135,7 +151,7 @@ http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
 pegasus_http_port_t            tcp      5988
 pegasus_https_port_t           tcp      5989
 ```
-
+13. Добавляю порт 4881 в этот список
 
 ```
 [root@selinux ~]# semanage port -l | grep http
@@ -145,9 +161,11 @@ http_port_t                    tcp      4881, 80, 81, 443, 488, 8008, 8009, 8443
 pegasus_http_port_t            tcp      5988
 pegasus_https_port_t           tcp      5989
 ```
+14. И перезапускаю nginx
 
 ```
-[root@selinux ~]# systemctl restart nginx||systemctl status nginx
+[root@selinux ~]# systemctl restart nginx
+[root@selinux ~]# systemctl status nginx
 ● nginx.service - The nginx HTTP and reverse proxy server
    Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
    Active: active (running) since Thu 2022-04-28 11:31:22 UTC; 10ms ago
@@ -167,15 +185,19 @@ Apr 28 11:31:22 selinux nginx[4750]: nginx: the configuration file /etc/nginx/ng
 Apr 28 11:31:22 selinux nginx[4750]: nginx: configuration file /etc/nginx/nginx.conf test is successful
 Apr 28 11:31:22 selinux systemd[1]: Started The nginx HTTP and reverse proxy server.
 ```
+15. nginx запустился
 
 ![Screenshot from 2022-04-28 14-35-32](https://user-images.githubusercontent.com/98701086/165743741-f817b366-e5f4-45dd-827f-b38d9f7942db.png)
 
+16. Удаляю порт 4881 из списка http_port_t
 ```
 [root@selinux ~]# semanage port -d -t http_port_t -p tcp 4881
 ```
+17. Перезапускаю nginx, SELinux его опять не пускат на порт 4881
 
 ```
-[root@selinux ~]# systemctl restart nginx||systemctl status nginx
+[root@selinux ~]# systemctl restart nginx
+[root@selinux ~]# systemctl status nginx
 Job for nginx.service failed because the control process exited with error code.
 See "systemctl status nginx.service" and "journalctl -xe" for details.
 ● nginx.service - The nginx HTTP and reverse proxy server
@@ -194,6 +216,7 @@ Apr 28 11:38:59 selinux systemd[1]: nginx.service: Control process exited, code=
 Apr 28 11:38:59 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
 Apr 28 11:38:59 selinux systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
 ```
+18. Теперь попробую создать модуль для SELinux. Смотрю audit.log
 
 ```
 [root@selinux ~]# grep nginx /var/log/audit/audit.log
@@ -205,15 +228,16 @@ type=AVC msg=audit(1651145939.025:638): avc:  denied  { name_bind } for  pid=479
 type=SYSCALL msg=audit(1651145939.025:638): arch=c000003e syscall=49 success=no exit=-13 a0=8 a1=55c75e2ce7b8 a2=10 a3=7ffc8e2b8230 items=0 ppid=1 pid=4799 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="nginx" exe="/usr/sbin/nginx" subj=system_u:system_r:httpd_t:s0 key=(null)ARCH=x86_64 SYSCALL=bind AUID="unset" UID="root" GID="root" EUID="root" SUID="root" FSUID="root" EGID="root" SGID="root" FSGID="root"
 type=SERVICE_START msg=audit(1651145939.033:639): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=nginx comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=failed'UID="root" AUID="unset"
 ```
+19. Генерирую модуль nginx-port-4881 через программу audit2allow
 
 ```
-
 [root@selinux ~]# grep 1651145939.025:638 /var/log/audit/audit.log | audit2allow -M nginx-port-4881
 ******************** IMPORTANT ***********************
 To make this policy package active, execute:
 
 semodule -i nginx-port-4881.pp
 ```
+20. Устанавливаю модуль и перезапускаю nginx
 
 ```
 [root@selinux ~]# semodule -i nginx-port-4881.pp
@@ -239,5 +263,44 @@ Apr 28 11:46:26 selinux nginx[4844]: nginx: configuration file /etc/nginx/nginx.
 Apr 28 11:46:26 selinux systemd[1]: Started The nginx HTTP and reverse proxy server.
 
 ```
+21. nginx запустился
 
 ![Screenshot from 2022-04-28 14-48-49](https://user-images.githubusercontent.com/98701086/165745677-d1792537-d188-4975-b996-30cedb937d99.png)
+
+22. Модуль в установленных. 
+```
+[root@selinux ~]# semodule -l | grep nginx
+nginx-port-4881
+```
+23. Удаляю модуль и перезапускаю nginx
+
+```
+[root@selinux ~]# semodule -r nginx-port-4881
+libsemanage.semanage_direct_remove_key: Removing last nginx-port-4881 module (no other nginx-port-4881 module exists at another priority).
+[root@selinux ~]# systemctl restart nginx
+Job for nginx.service failed because the control process exited with error code.
+See "systemctl status nginx.service" and "journalctl -xe" for details.
+[root@selinux ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+   Active: failed (Result: exit-code) since Thu 2022-04-28 11:52:05 UTC; 3s ago
+  Process: 4846 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 4874 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=1/FAILURE)
+  Process: 4872 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4847 (code=exited, status=0/SUCCESS)
+
+Apr 28 11:52:05 selinux systemd[1]: nginx.service: Succeeded.
+Apr 28 11:52:05 selinux systemd[1]: Stopped The nginx HTTP and reverse proxy server.
+Apr 28 11:52:05 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Apr 28 11:52:05 selinux nginx[4874]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Apr 28 11:52:05 selinux nginx[4874]: nginx: [emerg] bind() to 0.0.0.0:4881 failed (13: Permission denied)
+Apr 28 11:52:05 selinux nginx[4874]: nginx: configuration file /etc/nginx/nginx.conf test failed
+Apr 28 11:52:05 selinux systemd[1]: nginx.service: Control process exited, code=exited status=1
+Apr 28 11:52:05 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
+Apr 28 11:52:05 selinux systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
+```
+24. Запуститься на порту 4881 не удалось. 
+25. Я думаю, что предпочтительней в данном случае делать модуль для SELinux. Потому, что состояние резервированных портов для nginx и состояние sebool могут сбросить
+
+```
+```
