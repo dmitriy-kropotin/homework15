@@ -207,4 +207,37 @@ type=SERVICE_START msg=audit(1651145939.033:639): pid=1 uid=0 auid=4294967295 se
 ```
 
 ```
+
+[root@selinux ~]# grep 1651145939.025:638 /var/log/audit/audit.log | audit2allow -M nginx-port-4881
+******************** IMPORTANT ***********************
+To make this policy package active, execute:
+
+semodule -i nginx-port-4881.pp
 ```
+
+```
+[root@selinux ~]# semodule -i nginx-port-4881.pp
+[root@selinux ~]# systemctl restart nginx
+[root@selinux ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2022-04-28 11:46:26 UTC; 7s ago
+  Process: 4846 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 4844 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 4841 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4847 (nginx)
+    Tasks: 3 (limit: 4951)
+   Memory: 5.0M
+   CGroup: /system.slice/nginx.service
+           ├─4847 nginx: master process /usr/sbin/nginx
+           ├─4848 nginx: worker process
+           └─4849 nginx: worker process
+
+Apr 28 11:46:26 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Apr 28 11:46:26 selinux nginx[4844]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Apr 28 11:46:26 selinux nginx[4844]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+Apr 28 11:46:26 selinux systemd[1]: Started The nginx HTTP and reverse proxy server.
+
+```
+
+![Screenshot from 2022-04-28 14-48-49](https://user-images.githubusercontent.com/98701086/165745677-d1792537-d188-4975-b996-30cedb937d99.png)
