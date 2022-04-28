@@ -489,4 +489,37 @@ ns01.dns.lab.           3600    IN      A       192.168.50.10
 ```
 
 ```
+[vagrant@client ~]$ nsupdate -k /etc/named.zonetransfer.key
+> server 192.168.50.10
+> zone ddns.lab
+> update add ff.ddns.lab. 60 A 192.168.50.15
+> send
+> quit
+[vagrant@client ~]$ dig ff.ddns.lab
+
+; <<>> DiG 9.11.4-P2-RedHat-9.11.4-26.P2.el7_9.9 <<>> ff.ddns.lab
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 33613
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 2
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;ff.ddns.lab.                   IN      A
+
+;; ANSWER SECTION:
+ff.ddns.lab.            60      IN      A       192.168.50.15
+
+;; AUTHORITY SECTION:
+ddns.lab.               3600    IN      NS      ns01.dns.lab.
+
+;; ADDITIONAL SECTION:
+ns01.dns.lab.           3600    IN      A       192.168.50.10
+
+;; Query time: 0 msec
+;; SERVER: 192.168.50.10#53(192.168.50.10)
+;; WHEN: Thu Apr 28 14:37:40 UTC 2022
+;; MSG SIZE  rcvd: 95
+
 ```
