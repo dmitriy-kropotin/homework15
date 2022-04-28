@@ -95,3 +95,56 @@ Apr 28 11:09:51 selinux systemd[1]: Started The nginx HTTP and reverse proxy ser
 ```
 
 ![Снимок экрана 2022-04-27 в 22 18 02](https://user-images.githubusercontent.com/98701086/165603069-fc5f880f-e851-4a86-9dec-1ccdd2d10811.png)
+
+```
+[root@selinux ~]# getsebool -a | grep nis_enabled
+nis_enabled --> on
+[root@selinux ~]# setsebool -P nis_enabled off
+[root@selinux ~]#
+```
+
+```
+[root@selinux ~]# systemctl restart nginx
+Job for nginx.service failed because the control process exited with error code.
+See "systemctl status nginx.service" and "journalctl -xe" for details.
+[root@selinux ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+   Active: failed (Result: exit-code) since Thu 2022-04-28 11:28:39 UTC; 10s ago
+  Process: 4684 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 4729 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=1/FAILURE)
+  Process: 4725 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4685 (code=exited, status=0/SUCCESS)
+
+Apr 28 11:28:39 selinux systemd[1]: nginx.service: Succeeded.
+Apr 28 11:28:39 selinux systemd[1]: Stopped The nginx HTTP and reverse proxy server.
+Apr 28 11:28:39 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Apr 28 11:28:39 selinux nginx[4729]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Apr 28 11:28:39 selinux nginx[4729]: nginx: [emerg] bind() to 0.0.0.0:4881 failed (13: Permission denied)
+Apr 28 11:28:39 selinux nginx[4729]: nginx: configuration file /etc/nginx/nginx.conf test failed
+Apr 28 11:28:39 selinux systemd[1]: nginx.service: Control process exited, code=exited status=1
+Apr 28 11:28:39 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
+Apr 28 11:28:39 selinux systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
+```
+
+```
+[root@selinux ~]# semanage port -l | grep http
+http_cache_port_t              tcp      8080, 8118, 8123, 10001-10010
+http_cache_port_t              udp      3130
+http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
+pegasus_http_port_t            tcp      5988
+pegasus_https_port_t           tcp      5989
+```
+
+
+```
+[root@selinux ~]# semanage port -l | grep http
+http_cache_port_t              tcp      8080, 8118, 8123, 10001-10010
+http_cache_port_t              udp      3130
+http_port_t                    tcp      4881, 80, 81, 443, 488, 8008, 8009, 8443, 9000
+pegasus_http_port_t            tcp      5988
+pegasus_https_port_t           tcp      5989
+```
+
+
+
