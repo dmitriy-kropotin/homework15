@@ -146,5 +146,25 @@ pegasus_http_port_t            tcp      5988
 pegasus_https_port_t           tcp      5989
 ```
 
+```
+[root@selinux ~]# systemctl restart nginx&&systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2022-04-28 11:31:22 UTC; 10ms ago
+  Process: 4752 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 4750 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 4748 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4753 (nginx)
+    Tasks: 3 (limit: 4951)
+   Memory: 5.0M
+   CGroup: /system.slice/nginx.service
+           ├─4753 nginx: master process /usr/sbin/nginx
+           ├─4754 nginx: worker process
+           └─4755 nginx: worker process
 
+Apr 28 11:31:22 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Apr 28 11:31:22 selinux nginx[4750]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Apr 28 11:31:22 selinux nginx[4750]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+Apr 28 11:31:22 selinux systemd[1]: Started The nginx HTTP and reverse proxy server.
+```
 
