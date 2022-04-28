@@ -147,7 +147,7 @@ pegasus_https_port_t           tcp      5989
 ```
 
 ```
-[root@selinux ~]# systemctl restart nginx&&systemctl status nginx
+[root@selinux ~]# systemctl restart nginx||systemctl status nginx
 ● nginx.service - The nginx HTTP and reverse proxy server
    Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
    Active: active (running) since Thu 2022-04-28 11:31:22 UTC; 10ms ago
@@ -169,3 +169,42 @@ Apr 28 11:31:22 selinux systemd[1]: Started The nginx HTTP and reverse proxy ser
 ```
 
 ![Screenshot from 2022-04-28 14-35-32](https://user-images.githubusercontent.com/98701086/165743741-f817b366-e5f4-45dd-827f-b38d9f7942db.png)
+
+```
+[root@selinux ~]# semanage port -d -t http_port_t -p tcp 4881
+```
+
+```
+[root@selinux ~]# systemctl restart nginx||systemctl status nginx
+Job for nginx.service failed because the control process exited with error code.
+See "systemctl status nginx.service" and "journalctl -xe" for details.
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+   Active: failed (Result: exit-code) since Thu 2022-04-28 11:38:59 UTC; 12ms ago
+  Process: 4752 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 4799 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=1/FAILURE)
+  Process: 4797 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4753 (code=exited, status=0/SUCCESS)
+
+Apr 28 11:38:59 selinux systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Apr 28 11:38:59 selinux nginx[4799]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Apr 28 11:38:59 selinux nginx[4799]: nginx: [emerg] bind() to 0.0.0.0:4881 failed (13: Permission denied)
+Apr 28 11:38:59 selinux nginx[4799]: nginx: configuration file /etc/nginx/nginx.conf test failed
+Apr 28 11:38:59 selinux systemd[1]: nginx.service: Control process exited, code=exited status=1
+Apr 28 11:38:59 selinux systemd[1]: nginx.service: Failed with result 'exit-code'.
+Apr 28 11:38:59 selinux systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
+```
+
+```
+[root@selinux ~]# grep nginx /var/log/audit/audit.log
+...
+type=AVC msg=audit(1651145922.194:636): avc:  denied  { name_bind } for  pid=4790 comm="nginx" src=4881 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:unreserved_port_t:s0 tclass=tcp_socket permissive=0
+type=SYSCALL msg=audit(1651145922.194:636): arch=c000003e syscall=49 success=no exit=-13 a0=8 a1=55b80d175838 a2=10 a3=7fff7dcb4770 items=0 ppid=1 pid=4790 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="nginx" exe="/usr/sbin/nginx" subj=system_u:system_r:httpd_t:s0 key=(null)ARCH=x86_64 SYSCALL=bind AUID="unset" UID="root" GID="root" EUID="root" SUID="root" FSUID="root" EGID="root" SGID="root" FSGID="root"
+type=SERVICE_START msg=audit(1651145922.210:637): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=nginx comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=failed'UID="root" AUID="unset"
+type=AVC msg=audit(1651145939.025:638): avc:  denied  { name_bind } for  pid=4799 comm="nginx" src=4881 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:unreserved_port_t:s0 tclass=tcp_socket permissive=0
+type=SYSCALL msg=audit(1651145939.025:638): arch=c000003e syscall=49 success=no exit=-13 a0=8 a1=55c75e2ce7b8 a2=10 a3=7ffc8e2b8230 items=0 ppid=1 pid=4799 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="nginx" exe="/usr/sbin/nginx" subj=system_u:system_r:httpd_t:s0 key=(null)ARCH=x86_64 SYSCALL=bind AUID="unset" UID="root" GID="root" EUID="root" SUID="root" FSUID="root" EGID="root" SGID="root" FSGID="root"
+type=SERVICE_START msg=audit(1651145939.033:639): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=nginx comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=failed'UID="root" AUID="unset"
+```
+
+```
+```
