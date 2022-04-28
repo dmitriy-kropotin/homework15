@@ -523,3 +523,7 @@ ns01.dns.lab.           3600    IN      A       192.168.50.10
 ;; MSG SIZE  rcvd: 95
 
 ```
+
+```
+/var/named(/.*)?
+```
