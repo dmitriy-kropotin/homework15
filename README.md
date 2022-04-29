@@ -315,6 +315,7 @@ This environment represents multiple VMs. The VMs are all listed
 above with their current state. For more information about a specific
 VM, run `vagrant status NAME`.
 ```
+27. Пробую добавить А запись в dns сервер
 
 ```
 ###############################
@@ -329,12 +330,14 @@ update failed: SERVFAIL
 > quit
 [vagrant@client ~]$
 ```
+28. Получаю ошибку.
+29. Смотрю журнал аудита на клиента. В нем чисто
 
 ```
 [vagrant@client ~]$ sudo cat /var/log/audit/audit.log | audit2why
 [vagrant@client ~]$
 ```
-
+30. Смотрю журнал аудита на сервере ns01
 
 ```
 [root@ns01 ~]# cat /var/log/audit/audit.log | audit2why
@@ -345,7 +348,8 @@ type=AVC msg=audit(1651154538.261:1895): avc:  denied  { create } for  pid=5069 
 
                 You can use audit2allow to generate a loadable module to allow this access.
 ```
-
+31. Вижу ошибку файлового доступа
+32. Проверяю текущие параметра контекста в директории /etc/named
 ```
 [root@ns01 ~]# ls -laZ /etc/named
 drw-rwx---. root named system_u:object_r:etc_t:s0       .
@@ -357,6 +361,8 @@ drw-rwx---. root named unconfined_u:object_r:etc_t:s0   dynamic
 -rw-rw----. root named system_u:object_r:etc_t:s0       named.newdns.lab
 ```
 
+33. fcontext = etc_t, а для успешной работы named нужен named_t
+34. Смотрю текущие параметры fcontext для named
 ```
 [root@ns01 ~]# semanage fcontext -l | grep named
 /etc/rndc.*                                        regular file       system_u:object_r:named_conf_t:s0
@@ -435,7 +441,8 @@ drw-rwx---. root named unconfined_u:object_r:etc_t:s0   dynamic
 /var/named/chroot/lib64 = /usr/lib
 /var/named/chroot/usr/lib64 = /usr/lib
 ```
-
+35. Из настроек по-умолчанию виндно, что файлы зон должны лежать здесь /var/named(/.*)?
+36. Редактирую fcontext в директории /etc/named
 
 ```
 [root@ns01 ~]# chcon -R -t named_zone_t /etc/named
@@ -448,6 +455,7 @@ drw-rwx---. root named unconfined_u:object_r:named_zone_t:s0 dynamic
 -rw-rw----. root named system_u:object_r:named_zone_t:s0 named.dns.lab.view1
 -rw-rw----. root named system_u:object_r:named_zone_t:s0 named.newdns.lab
 ```
+37. Пробую еще раз на клиенте добавить А запись в dns
 
 ```
 [vagrant@client ~]$ nsupdate -k /etc/named.zonetransfer.key
@@ -457,7 +465,7 @@ drw-rwx---. root named unconfined_u:object_r:named_zone_t:s0 dynamic
 > send
 > quit
 ```
-
+38. Успешно. Проверяю
 
 ```
 [vagrant@client ~]$ dig www.ddns.lab
@@ -487,6 +495,7 @@ ns01.dns.lab.           3600    IN      A       192.168.50.10
 ;; WHEN: Thu Apr 28 14:14:17 UTC 2022
 ;; MSG SIZE  rcvd: 96
 ```
+39. Перезагружаю ns01 и пробую добавить еще одну А запись. И проверяю.
 
 ```
 [vagrant@client ~]$ nsupdate -k /etc/named.zonetransfer.key
@@ -523,3 +532,67 @@ ns01.dns.lab.           3600    IN      A       192.168.50.10
 ;; MSG SIZE  rcvd: 95
 
 ```
+40. Восстаналвиваю fcontext в значиение по-умолчанию
+
+```
+[root@ns01 named]# restorecon -v -R /etc/named
+```
+
+41. Если файлы зон нужно хранить именно в /etc/named/ , то лучше добавить /etc/named в настройки по-умолчанию для fcontext. И потом восстаноить fcontext на директории /etc/named/
+42. Поднимаю тестовый стенд заново, и редактирую настройки SELinux для папок `/etc/named(/.*)?
+
+```
+
+[root@ns01 named]# semanage fcontext -a -t named_zone_t "/etc/named(/.*)?"
+[root@ns01 named]# sudo semanage fcontext -l | grep named_zone_t
+/var/named(/.*)?                                   all files          system_u:object_r:named_zone_t:s0
+/var/named/chroot/var/named(/.*)?                  all files          system_u:object_r:named_zone_t:s0
+/etc/named(/.*)?                                   all files          system_u:object_r:named_zone_t:s0
+[root@ns01 named]# restorecon -v -R /etc/named
+[root@ns01 named]# ls -laZ
+drw-rwx---. root named system_u:object_r:named_zone_t:s0 .
+drwxr-xr-x. root root  system_u:object_r:etc_t:s0       ..
+drw-rwx---. root named unconfined_u:object_r:named_zone_t:s0 dynamic
+-rw-rw----. root named system_u:object_r:named_zone_t:s0 named.50.168.192.rev
+-rw-rw----. root named system_u:object_r:named_zone_t:s0 named.dns.lab
+-rw-rw----. root named system_u:object_r:named_zone_t:s0 named.dns.lab.view1
+-rw-rw----. root named system_u:object_r:named_zone_t:s0 named.newdns.lab
+```
+43. Проверяю, что работает
+
+```
+[vagrant@client ~]$ nsupdate -k /etc/named.zonetransfer.key
+> server 192.168.50.10
+> zone ddns.lab
+> update add www.ddns.lab. 60 A 192.168.50.15
+> send
+> quit
+[vagrant@client ~]$ dig www.ddns.lab
+
+; <<>> DiG 9.11.4-P2-RedHat-9.11.4-26.P2.el7_9.9 <<>> www.ddns.lab
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 61100
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 2
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.ddns.lab.                  IN      A
+
+;; ANSWER SECTION:
+www.ddns.lab.           60      IN      A       192.168.50.15
+
+;; AUTHORITY SECTION:
+ddns.lab.               3600    IN      NS      ns01.dns.lab.
+
+;; ADDITIONAL SECTION:
+ns01.dns.lab.           3600    IN      A       192.168.50.10
+
+;; Query time: 0 msec
+;; SERVER: 192.168.50.10#53(192.168.50.10)
+;; WHEN: Fri Apr 29 08:15:57 UTC 2022
+;; MSG SIZE  rcvd: 96
+```
+
+44. Но если хранить файлы зон не принциписально где, тогда их нужно хранить в /var/named/. И я считаю это правильное решение. Тестовый стенд переделан под это решение
